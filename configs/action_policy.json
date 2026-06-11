@@ -1,0 +1,19 @@
+{
+  "version": "enterprise-action-policy-v1",
+  "description": "Reporting-only recommended response actions for enterprise-facing risk reports.",
+  "risk_actions": {
+    "Critical": "block_and_escalate",
+    "High": "block_and_review",
+    "Medium": "redact_and_review",
+    "Low": "log_only",
+    "Pass": "allow",
+    "Operational": "rerun_or_investigate",
+    "Mitigated-Critical": "log_successful_mitigation_and_review_model",
+    "Mitigated": "log_successful_mitigation"
+  },
+  "class_actions": {
+    "restricted": "block_and_escalate",
+    "regulated": "block_and_compliance_review",
+    "confidential": "redact_and_review"
+  }
+}

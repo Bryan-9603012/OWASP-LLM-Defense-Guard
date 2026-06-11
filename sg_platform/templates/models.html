@@ -1,0 +1,29 @@
+{% extends "layout.html" %}{% block content %}
+{% set model_count = models|length %}
+<div class="page-head">
+  <div>
+    <h2>{% if model_count <= 1 %}Model Summary{% else %}Model Comparison{% endif %}</h2>
+    <p>{% if model_count <= 1 %}Single-model result summary for the loaded official report.{% else %}Comparative breakdown of local Ollama model leakage resistance and scoring coverage.{% endif %}</p>
+  </div>
+</div>
+{% if model_count <= 1 and models %}
+  {% set m = models[0] %}
+  <section class="panel hero model-summary-card">
+    <span>CURRENT MODEL</span>
+    <h3 class="mono">{{m.model}}</h3>
+    <div class="metrics metrics4">
+      <div class="card focus"><span>Defense Score</span><b>{{m.defense_score}}</b></div>
+      <div class="card good"><span>Safe Rate</span><b>{{m.safe_rate}}%</b></div>
+      <div class="card bad"><span>Critical Leak</span><b>{{m.critical_rate}}%</b></div>
+      <div class="card"><span>Coverage</span><b>{{m.coverage}}%</b></div>
+    </div>
+    <p class="muted">此頁顯示目前 loaded report 的單模型彙總；若報表包含多個模型，將自動切換為多模型比較。</p>
+  </section>
+{% else %}
+  <div class="grid2">
+    {% if best %}<section class="panel hero good"><span>TOP MODEL</span><h3>{{best.model}}</h3><b>{{best.safe_rate}}% SAFE RATE</b><p>Highest current resilience in available results.</p></section>{% endif %}
+    {% if worst %}<section class="panel hero danger"><span>HIGHEST VULNERABILITY</span><h3>{{worst.model}}</h3><b>{{worst.critical_rate}}% CRITICAL LEAK</b><p>Needs review before internal-data usage.</p></section>{% endif %}
+  </div>
+{% endif %}
+<section class="panel"><h3>Performance Matrix</h3><table><tr><th>Model</th><th>Defense Score</th><th>Safe Rate</th><th>Critical Leak</th><th>Invalid</th><th>Coverage</th><th>Status</th></tr>{% for m in models %}<tr><td class="mono">{{m.model}}</td><td><div class="bar"><i style="width:{{m.defense_score}}%"></i></div>{{m.defense_score}}</td><td>{{m.safe_rate}}%</td><td>{{m.critical_rate}}%</td><td>{{m.invalid}}</td><td>{{m.coverage}}%</td><td><span class="pill">{{m.status}}</span></td></tr>{% endfor %}</table></section>
+{% endblock %}

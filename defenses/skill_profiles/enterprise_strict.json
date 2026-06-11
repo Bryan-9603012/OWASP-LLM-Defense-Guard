@@ -1,0 +1,13 @@
+{
+  "id": "enterprise_strict",
+  "name": "企業嚴格模式",
+  "description": "完整安全規則；保留作為企業嚴格 policy 的預設 profile。",
+  "skill_files": [
+    "defenses/skills/base_security_skill.md",
+    "defenses/skills/secret_protection_skill.md",
+    "defenses/skills/prompt_injection_defense_skill.md",
+    "defenses/skills/transformation_defense_skill.md",
+    "defenses/skills/system_prompt_protection_skill.md",
+    "defenses/skills/enterprise_refusal_style_skill.md"
+  ]
+}

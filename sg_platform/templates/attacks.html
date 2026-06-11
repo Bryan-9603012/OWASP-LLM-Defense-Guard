@@ -1,0 +1,50 @@
+{% extends "layout.html" %}{% block content %}
+<div class="title row"><div><h2>Attack Analysis</h2><p>Leak level distribution is calculated from attack samples across selected defense groups. Benign / normal samples are excluded.</p></div><a class="btn" href="/reports">Open Reports</a></div>
+
+<section class="panel heatmap-panel">
+  <div class="row heatmap-title-row">
+    <div>
+      <h3>Attack × Leak Level Heatmap</h3>
+      <p class="muted">Each cell shows the count of valid attack samples scored at the corresponding leak level.</p>
+    </div>
+    <div class="segmented"><span class="on">Count</span><span>Percentage</span></div>
+  </div>
+  <div class="leak-level-grid">
+    <div class="risk-head attack-col">Attack ID</div>
+    {% for lv in leak_level_heatmap.levels %}
+      <div class="leak-level-head level-{{lv.id}}"><b>{{lv.label}}</b><span>{{lv.name}}</span></div>
+    {% endfor %}
+    {% for row in leak_level_heatmap.rows %}
+      <div class="risk-attack leak-attack"><b>{{row.attack_id}}</b><span>{{row.attack_name}}</span></div>
+      {% for c in row.cells %}
+        <div class="leak-cell {{c.class}} {% if c.count == 0 %}zero{% endif %}" title="{{row.attack_id}} {{row.attack_name}} | L{{c.level}} | Count: {{c.count}} | {{c.percent}}% | Total: {{row.total}}">
+          <span>{{c.display}}</span>
+          {% if c.count > 0 %}<small>{{c.percent}}%</small>{% endif %}
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</section>
+
+<div class="grid2 attack-layout">
+  <section class="panel"><div class="row"><h3>Attack Matrix (A01-A20)</h3><span class="legend"><i class="low"></i>Low <i class="med"></i>Med <i class="crit"></i>Critical</span></div>
+    <div class="attackgrid matrix20">{% for a in attacks %}<div class="attack {{'critical' if a.critical_rate>=20 else 'high' if a.critical_rate>0 else 'low'}}"><span>{{a.display_id or a.attack_id}}</span><b>{{a.attack_name}}</b><div class="mini-bar"><i style="width:{{a.critical_rate}}%"></i></div><em>{{a.critical_rate}}% delivered critical</em><em class="muted">Raw critical {{a.raw_critical_rate}}%</em></div>{% endfor %}</div>
+  </section>
+  <aside>
+    {% set top = danger_attack %}
+    <section class="panel danger"><h3>Most Dangerous Vector</h3><h2>{{top.display_id or top.attack_id if top else 'None'}}</h2><p>{{top.attack_name if top else 'No delivered/raw critical attack detected'}}</p><b>{{top.critical_rate if top else 0}}% Delivered Critical Leak</b>{% if top %}<p class="muted">Raw Critical: {{top.raw_critical_rate}}%</p>{% endif %}</section>
+    <section class="panel"><h3>Evaluation Notes</h3><p class="muted">Use Raw Critical Leak for model-level weakness and Delivered Critical Leak for user-visible risk after output filtering/redaction.</p></section>
+  </aside>
+</div>
+
+<details class="panel detail-distribution">
+  <summary><b>Detailed Leak Distribution</b> <span class="muted">Original stacked distribution view</span></summary>
+  <p class="muted">L0 Safe, L1 Risk Hint, L2 Partial, L3 Reconstructable, L4 Direct Leak. Distribution is calculated from attack samples only.</p>
+  <div class="leak-legend"><span><i class="l0"></i>L0 Safe</span><span><i class="l1"></i>L1 Risk Hint</span><span><i class="l2"></i>L2 Partial</span><span><i class="l3"></i>L3 Reconstructable</span><span><i class="l4"></i>L4 Direct Leak</span></div>
+  <div class="leakbars leakbars20">{% for a in attacks %}<div class="leakrow"><span>{{a.display_id or a.attack_id}}</span><div class="stack">{% for v in a.levels %}<i class="l{{loop.index0}}" style="width:{{v}}%"></i>{% endfor %}</div></div>{% endfor %}</div>
+</details>
+
+<section class="panel telemetry"><b>OLLAMA EVALUATION TELEMETRY</b><pre>[local] Latest reports loaded from current data source
+[trace] Raw and delivered leak scoring enabled
+[guard] Redacted prompt/response display active</pre></section>
+{% endblock %}

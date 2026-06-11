@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "description": "Integrated UI-only bridge. Web maps form values to src/run_benchmark.py existing CLI flags; no separate runner/scorer is used.",
+  "mode": "official_run_benchmark_cli_args",
+  "command": ["{python}", "src/run_benchmark.py"],
+  "cwd": "{root}"
+}

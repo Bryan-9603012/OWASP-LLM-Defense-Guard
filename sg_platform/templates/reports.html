@@ -1,0 +1,172 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Reports Center <span class="mode-badge">Official Runner Output</span></h2>
+    <p>正式 runner 產生的報表下載中心。Web UI 不重新計分，只整理、分類與匯出 official outputs。</p>
+  </div>
+  <div class="actions">
+    <a class="btn ghost" href="/download_pack/raw">Raw Data ZIP</a>
+    <a class="btn ghost" href="/download_pack/recommended">Recommended ZIP</a>
+    <a class="btn" href="/download_pack/full">Full Report ZIP</a>
+  </div>
+</div>
+
+<section class="panel report-context">
+  <h3>Loaded Report Context</h3>
+  <div class="report-meta-grid compact-report-meta">
+    <div><span>Run ID</span><b>{{ report_context.run_id }}</b></div>
+    <div><span>Model / Language</span><b>{{ report_context.model_language }}</b></div>
+    <div><span>Protected Asset</span><b class="mono smalltext">{{ report_context.asset }}</b></div>
+    <div><span>Total Rows</span><b>{{ report_context.total_rows }}</b></div>
+    <div><span>Primary Files</span><b>{{ report_context.primary_count }}</b></div>
+    <div><span>Nested Copies</span><b>{{ report_context.duplicate_count }}</b></div>
+    <div><span>Total Files</span><b>{{ report_context.file_count }}</b></div>
+    <div><span>Modified</span><b>{{ report_context.modified }}</b></div>
+  </div>
+  <details class="path-detail">
+    <summary>Show report root path</summary>
+    <code>{{ report_context.root }}</code>
+  </details>
+</section>
+
+<section class="panel">
+  <div class="row">
+    <div>
+      <h3>Recommended Downloads</h3>
+      <p class="muted">一般檢視優先下載這些檔案即可；完整 nested outputs 已收在 Advanced File Browser。</p>
+    </div>
+  </div>
+  <div class="report-card-grid">
+    {% for r in recommended %}
+    <a class="report-card" href="{{ r.href }}">
+      <span>{{ r.title }}</span>
+      <b>{{ r.action }}</b>
+      <p>{{ r.desc }}</p>
+      <code>{{ r.meta }}</code>
+    </a>
+    {% else %}
+    <div class="report-card"><span>No recommended files</span><p>目前沒有可推薦的正式輸出。</p></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="row">
+    <div>
+      <h3>Report Browser</h3>
+      <p class="muted">預設隱藏 per-group / model nested copies，避免同名報表重複干擾。需要完整檔案時可開啟 Show nested copies。</p>
+    </div>
+  </div>
+  <div class="report-tabs">
+    <button class="report-tab active" data-filter="all">All Files <small>{{ files|length }}</small></button>
+    {% for c in categories %}
+      <button class="report-tab" data-filter="{{ c }}">{{ c }} <small>{{ category_counts.get(c, 0) }}</small></button>
+    {% endfor %}
+  </div>
+
+  <div class="report-toolbar enhanced">
+    <input id="reportSearch" type="search" placeholder="Search report file, group, category, extension...">
+    <select id="groupFilter">
+      <option value="all">All Groups</option>
+      <option value="All">All / Merged</option>
+      <option value="G0">G0</option>
+      <option value="G1">G1</option>
+      <option value="G5">G5</option>
+      <option value="G6">G6</option>
+      <option value="G7">G7</option>
+    </select>
+    <select id="typeFilter">
+      <option value="all">All Types</option>
+      <option value="CSV">CSV</option>
+      <option value="MD">Markdown</option>
+      <option value="PNG">PNG</option>
+      <option value="JSON">JSON</option>
+      <option value="LOG">LOG</option>
+    </select>
+    <label class="copy-toggle"><input id="showNested" type="checkbox"> Show nested copies</label>
+  </div>
+
+  <div class="report-count-line muted"><span id="visibleCount">0</span> visible files. Primary files are shown first.</div>
+
+  <div class="table-wrap">
+    <table class="report-table" id="reportTable">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Category</th>
+          <th>Group</th>
+          <th>Type</th>
+          <th>Size</th>
+          <th>Modified</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in files %}
+        <tr data-category="{{ f.category }}" data-group="{{ f.group }}" data-type="{{ f.type }}" data-duplicate="{{ '1' if f.duplicate else '0' }}" data-primary="{{ '1' if f.primary else '0' }}" data-search="{{ f.name }} {{ f.category }} {{ f.group }} {{ f.type }}">
+          <td>
+            <div class="file-name">
+              <div class="file-badges">
+                {% if f.primary %}<span class="rec-dot primary-dot">Primary</span>{% endif %}
+                {% if f.recommended and not f.primary %}<span class="rec-dot">Recommended</span>{% endif %}
+                {% if f.duplicate %}<span class="rec-dot duplicate-dot">Nested copy</span>{% endif %}
+              </div>
+              <code>{{ f.name }}</code>
+            </div>
+          </td>
+          <td><span class="pill">{{ f.category }}</span></td>
+          <td><span class="pill ghost-pill">{{ f.group }}</span></td>
+          <td>{{ f.type }}</td>
+          <td>{{ f.size_label }}</td>
+          <td>{{ f.mtime }}</td>
+          <td><a class="btn small" href="/download/{{ f.download_path }}">Download</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">No report files found. Run an official experiment first or copy reports into ./reports.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+(function(){
+  const tabs = Array.from(document.querySelectorAll('.report-tab'));
+  const rows = Array.from(document.querySelectorAll('#reportTable tbody tr'));
+  const search = document.getElementById('reportSearch');
+  const group = document.getElementById('groupFilter');
+  const type = document.getElementById('typeFilter');
+  const showNested = document.getElementById('showNested');
+  const visibleCount = document.getElementById('visibleCount');
+  let category = 'all';
+  function apply(){
+    const q = (search && search.value || '').toLowerCase().trim();
+    const g = group && group.value || 'all';
+    const t = type && type.value || 'all';
+    const allowNested = !!(showNested && showNested.checked);
+    let count = 0;
+    rows.forEach(row => {
+      const okCat = category === 'all' || row.dataset.category === category;
+      const okGroup = g === 'all' || row.dataset.group === g;
+      const okType = t === 'all' || row.dataset.type === t;
+      const okSearch = !q || (row.dataset.search || '').toLowerCase().includes(q);
+      const okNested = allowNested || row.dataset.duplicate !== '1' || q || g !== 'all';
+      const visible = okCat && okGroup && okType && okSearch && okNested;
+      row.style.display = visible ? '' : 'none';
+      if (visible) count++;
+    });
+    if (visibleCount) visibleCount.textContent = String(count);
+  }
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    category = tab.dataset.filter || 'all';
+    apply();
+  }));
+  [search, group, type, showNested].forEach(el => el && el.addEventListener('input', apply));
+  [showNested].forEach(el => el && el.addEventListener('change', apply));
+  apply();
+})();
+</script>
+{% endblock %}

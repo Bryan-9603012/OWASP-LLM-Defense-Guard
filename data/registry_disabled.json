@@ -1,0 +1,5 @@
+{
+  "version": "disabled_for_group_isolation",
+  "description": "Empty registry used by the v25.3 formal G0-G6 comparison so Secret Registry / Canary features do not become an implicit experiment variable.",
+  "secrets": []
+}

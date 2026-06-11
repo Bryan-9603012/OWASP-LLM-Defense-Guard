@@ -1,0 +1,31 @@
+{% extends "layout.html" %}{% block content %}
+{% if job.status in ['queued','running','checking_models','pulling_model'] %}<script>setTimeout(function(){ window.location.reload(); }, 3000);</script>{% endif %}
+<div class="page-head"><div><h2>Run Status: Official Runner <span>#{{job.job_id[:8]}}</span></h2><p>Job ID: <code>{{job.job_id}}</code></p></div><div class="actions"><a class="btn ghost" href="/experiments">Back to UI Console</a></div></div>
+{% set done = job.done|default(0, true)|int %}
+{% set total = job.total|default(0, true)|int %}
+{% set pct = 100 if job.status == 'completed' else (0 if total == 0 else ((done * 100) // total)) %}
+<div class="status-grid">
+<section class="panel status-main">
+  <div class="status-head"><span class="status-badge {{job.status}}">● {{job.status|upper}}</span><h3>Automated Security Audit</h3></div>
+  <div class="progress-row"><span>Overall Progress <small class="muted">auto-refreshes while running</small></span><b>{{pct}}%</b></div>
+  <div class="progress"><i style="width: {{pct}}%"></i></div>
+  <div class="run-numbers"><span>Completed: <b>{{done}}</b> Samples</span><span>Total: <b>{{total}}</b> Samples</span></div>
+  <div class="status-cards"><div><span>Current Task</span><b>{{job.current}}</b></div><div><span>Run Mode</span><b>Official Runner Bridge</b></div></div>
+  {% if job.status == 'completed' and done == total and total > 0 %}<p class="ok">All delegated official-runner workloads completed.</p>{% endif %}
+</section>
+<section class="panel runner-meta">
+  <h3>ⓘ Runner Metadata</h3>
+  <span>Request Folder</span><code>{{job.run_dir}}</code>
+  <span>Generated Config</span><code>{{job.config_path}}</code>
+  {% if job.log_file %}<span>Official Runner Log</span><code>{{job.log_file}}</code>{% endif %}
+</section>
+</div>
+{% if job.warning %}<div class="notice"><b>Warning</b> {{job.warning}}</div>{% endif %}
+{% if job.error %}<div class="notice danger"><b>Error</b> {{job.error}}</div>{% endif %}
+<section class="panel"><h3>Configuration</h3><table>{% for k,v in job.config.items() %}<tr><th>{{k}}</th><td>{{v}}</td></tr>{% endfor %}</table></section>
+{% if job.data_warning %}<div class="notice danger"><b>Data consistency warning</b><br>{{job.data_warning}}</div>{% endif %}
+{% if job.model_preflight %}<section class="panel"><h3>Model Preflight / Pull Status</h3><table><tr><th>Model</th><th>Installed Before</th><th>Missing</th><th>Auto Pull</th><th>Pull Status</th><th>Message</th></tr>{% for m in job.model_preflight %}<tr><td class="mono">{{m.model}}</td><td>{{m.installed_before}}</td><td>{{m.missing}}</td><td>{{m.auto_pull}}</td><td><span class="pill">{{m.pull_status}}</span></td><td class="smalltext">{{m.message}}</td></tr>{% endfor %}</table></section>{% endif %}
+
+{% if job.summary %}<section class="panel"><h3>Summary <span class="pill">Official Runner Output</span></h3><p class="muted">Summary loaded after official runner completion. The Web layer does not perform independent scoring.</p><div class="metrics metrics12"><div class="card"><span>Total</span><b>{{job.summary.total}}</b></div><div class="card"><span>Attack Samples</span><b>{{job.summary.attack_cases}}</b></div><div class="card good"><span>Benign Samples</span><b>{{job.summary.benign_cases}}</b></div><div class="card focus"><span>Overall Avg Defense Score</span><b>{{job.summary.defense_score}}</b></div><div class="card"><span>Overall Avg Safe Rate</span><b>{{job.summary.safe_rate}}%</b></div><div class="card bad"><span>Delivered Critical Leak</span><b>{{job.summary.delivered_critical_rate}}%</b></div><div class="card bad"><span>Raw Critical Leak</span><b>{{job.summary.raw_critical_rate}}%</b></div><div class="card"><span>False Positive</span><b>{% if job.summary.false_positive_rate is none %}N/A{% else %}{{job.summary.false_positive_rate}}%{% endif %}</b></div><div class="card good"><span>Benign Pass</span><b>{% if job.summary.benign_pass_rate is none %}N/A{% else %}{{job.summary.benign_pass_rate}}%{% endif %}</b></div><div class="card"><span>Coverage</span><b>{{job.summary.coverage}}%</b></div></div><p><a class="btn" href="/">Open Overview</a> <a class="btn" href="/defenses">Open Defense Groups</a> <a class="btn" href="/traces">Open Trace Viewer</a> <a class="btn" href="/reports">Open Reports</a></p></section>{% endif %}
+{% if job.defense_summary %}<section class="panel"><h3>Defense Comparison Result</h3><table><tr><th>Defense Group</th><th>Profile</th><th>Score</th><th>Safe Rate</th><th>Raw Critical</th><th>Delivered Critical</th><th>Output Intervention</th><th>False Positive</th><th>Benign Pass</th><th>Coverage</th><th>Gain</th></tr>{% for d in job.defense_summary %}<tr><td><b>{{d.group}}</b> {% if d.is_best %}<span class="pill okpill">BEST</span>{% endif %}{% if d.group == 'No Defense' %}<span class="pill">BASELINE</span>{% endif %}</td><td><span class="pill">Formal G-Group</span></td><td>{{d.defense_score}}</td><td>{{d.safe_rate}}%</td><td>{{d.raw_critical_rate}}%</td><td>{{d.delivered_critical_rate}}%</td><td>{{d.defense_action_rate}}%</td><td>{{d.false_positive_display}}</td><td>{{d.benign_pass_display}}</td><td>{{d.coverage}}%</td><td class="{{'ok' if d.improvement > 0 else 'badtxt' if d.improvement < 0 else ''}}">{{d.gain_display}}</td></tr>{% endfor %}</table><p class="muted">Defense Score 使用 attack samples；False Positive / Benign Pass 使用 benign / normal samples。</p></section>{% endif %}
+{% endblock %}

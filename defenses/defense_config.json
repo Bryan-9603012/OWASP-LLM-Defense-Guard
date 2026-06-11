@@ -1,0 +1,113 @@
+{
+  "default": "none",
+  "defenses": [
+    {
+      "id": "none",
+      "name": "無防禦",
+      "type": "none",
+      "prompt_file": "defenses/no_defense.txt",
+      "input_guard": false,
+      "output_guard": false,
+      "skill": false,
+      "description": "baseline：不加任何防禦提示詞或程式規則。",
+      "skill_profile": "none",
+      "input_boundary": false
+    },
+    {
+      "id": "skill_only",
+      "name": "只使用 Skill 防禦",
+      "type": "skill_only",
+      "prompt_file": "defenses/skill_defense.txt",
+      "input_guard": false,
+      "output_guard": false,
+      "skill": true,
+      "description": "只把結構化防禦規則加入 system prompt，不做輸入/輸出程式攔截。",
+      "skill_profile": "full_security",
+      "input_boundary": false
+    },
+    {
+      "id": "input_guard",
+      "name": "只使用輸入檢查",
+      "type": "input_guard",
+      "prompt_file": "defenses/no_defense.txt",
+      "input_guard": true,
+      "output_guard": false,
+      "skill": false,
+      "description": "在使用者輸入送進模型前，先阻擋疑似 prompt injection 或敏感資料竊取請求。",
+      "skill_profile": "none",
+      "input_boundary": false
+    },
+    {
+      "id": "input_boundary",
+      "name": "只使用輸入邊界隔離",
+      "type": "input_boundary",
+      "prompt_file": "defenses/no_defense.txt",
+      "input_guard": false,
+      "input_boundary": true,
+      "output_guard": false,
+      "skill": false,
+      "description": "不刪除 user 原文，只將使用者輸入包成不可信資料區塊，避免與 system/developer 指令混合。",
+      "skill_profile": "none"
+    },
+    {
+      "id": "output_guard",
+      "name": "只使用輸出檢查",
+      "type": "output_guard",
+      "prompt_file": "defenses/no_defense.txt",
+      "input_guard": false,
+      "output_guard": true,
+      "skill": false,
+      "description": "檢查模型原始輸出，若偵測到敏感資料洩漏，改用安全拒答取代。",
+      "skill_profile": "none",
+      "input_boundary": false
+    },
+    {
+      "id": "io_guard",
+      "name": "輸入 + 邊界 + 輸出防禦",
+      "type": "full_guard",
+      "prompt_file": "defenses/no_defense.txt",
+      "input_guard": true,
+      "input_boundary": true,
+      "output_guard": true,
+      "skill": false,
+      "description": "不掛 Skill，只測外部 Input Guard、Input Boundary 與 Output Guard 的效果；適合分離觀察程式型防禦。",
+      "skill_profile": "none"
+    },
+    {
+      "id": "full_guard",
+      "name": "完整防禦",
+      "type": "full_guard",
+      "prompt_file": "defenses/skill_defense.txt",
+      "input_guard": true,
+      "output_guard": true,
+      "skill": true,
+      "description": "同時使用 Skill 防禦、輸入檢查、Input Boundary 與輸出檢查。",
+      "skill_profile": "full_security",
+      "input_boundary": true
+    },
+    {
+      "id": "prompt_defense",
+      "name": "提示詞防禦（舊版相容）",
+      "type": "inner_prompt",
+      "prompt_file": "defenses/prompt_defense.txt",
+      "input_guard": false,
+      "output_guard": false,
+      "skill": true,
+      "description": "舊版相容模式：使用一般 system prompt 層級的保密規則。",
+      "skill_profile": "secret_only",
+      "input_boundary": false
+    },
+    {
+      "id": "skill_defense",
+      "name": "Skill 防禦（舊版相容）",
+      "type": "inner_skill",
+      "prompt_file": "defenses/skill_defense.txt",
+      "input_guard": false,
+      "output_guard": false,
+      "skill": true,
+      "description": "舊版相容模式：使用結構化 Skill 防禦規則。",
+      "skill_profile": "full_security",
+      "input_boundary": false
+    }
+  ]
+}

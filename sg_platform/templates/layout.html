@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LLM Secret Guard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <aside class="sidebar stitch-sidebar">
+    <div class="brand stitch-brand">
+      <div class="logo">🛡</div>
+      <div><h1>Secret Guard</h1><p>VIGILANCE AI</p></div>
+    </div>
+    <nav>
+      <a class="{{'active' if active=='overview' else ''}}" href="/">▦ Overview</a>
+      <a class="{{'active' if active=='experiments' else ''}}" href="/experiments">▣ UI Console</a>
+      <a class="{{'active' if active=='defenses' else ''}}" href="/defenses">⬡ Defense Groups</a>
+      <a class="{{'active' if active=='models' else ''}}" href="/models">⌁ Model Results</a>
+      <a class="{{'active' if active=='attacks' else ''}}" href="/attacks">◈ Attack Analysis</a>
+      <a class="{{'active' if active=='assets' else ''}}" href="/assets">▣ Asset Manager</a>
+      <a class="{{'active' if active=='traces' else ''}}" href="/traces">↺ Trace Viewer</a>
+      <a class="{{'active' if active=='reports' else ''}}" href="/reports">▥ Reports</a>
+      <a class="{{'active' if active=='skills' else ''}}" href="/skills">✦ Skill Manager</a>
+    </nav>
+    <a class="new-analysis" href="/experiments">＋ New Analysis</a>
+    <div class="user"><b>Local User</b><span>Session active · v25.1</span></div>
+  </aside>
+  <main>
+    <header class="top stitch-top">
+      <form action="/traces"><input name="q" placeholder="Search evaluations, traces, models, protected assets, or attack IDs..."></form>
+      <div class="source-switch" title="{{data_source.detail}}">
+        <span class="{{'on' if data_source.is_demo else ''}}">Demo Data</span>
+        <span class="{{'on' if data_source.is_active_runner|default(false) else ''}}">Runner</span>
+        <span class="{{'on' if (not data_source.is_demo and not data_source.is_active_runner|default(false)) else ''}}">Live Reports</span>
+      </div>
+      <div class="latest-pill"><span class="dot"></span>{{latest_label if latest_label else 'System: Local'}}</div>
+      <strong>LLM Secret Guard</strong>
+    </header>
+    <section class="content">
+      {% if data_source.is_demo %}
+      <div class="notice warning"><b>Demo Mode</b><span>{{data_source.detail}}</span></div>
+      {% elif data_source.is_active_runner|default(false) %}
+      <div class="notice oknotice"><b>Runner Active</b><span>{{data_source.detail}}</span></div>
+      {% else %}
+      <div class="notice oknotice"><b>Live Report Mode</b><span>{{data_source.detail}}</span></div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+</body>
+</html>

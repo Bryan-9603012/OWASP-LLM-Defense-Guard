@@ -1,0 +1,83 @@
+{% extends "layout.html" %}{% block content %}
+<div class="title row">
+  <div><h2>Security Overview</h2><p>讀取終端機正式 runner 產出的 reports；Web UI 只負責顯示、管理與匯出，不新增實驗參數。</p></div>
+  <div class="actions"><a class="btn" href="/experiments">Open UI Console</a><a class="btn ghost" href="/reports">Export</a></div>
+</div>
+
+<div class="grid2 hero-row">
+  <section class="panel hero good">
+    <span>BEST DEFENSE GROUP</span>
+    <h3>{{best_defense.group if best_defense else 'No Live Comparison Yet'}}</h3>
+    <p>Defense Score {{best_defense.defense_score if best_defense else metrics.defense_score}} / Safe Rate {{best_defense.safe_rate if best_defense else metrics.safe_rate}}%</p>
+  </section>
+  <section class="panel hero danger">
+    <span>MOST DANGEROUS ATTACK</span>
+    <h3>{% if danger_attack %}{{danger_attack.display_id or danger_attack.attack_id}} / {{danger_attack.attack_name}}{% else %}No delivered-critical vector{% endif %}</h3>
+    <p>{% if danger_attack %}{{danger_attack.critical_rate}}% delivered critical leak rate in current dataset.{% else %}No delivered critical leak detected in the current dataset.{% endif %}</p>
+  </section>
+</div>
+
+<div class="metrics metrics8 metrics12">
+  <div class="card"><span>Total Samples</span><b>{{metrics.total}}</b></div>
+  <div class="card"><span>Attack Samples</span><b>{{metrics.attack_cases}}</b></div>
+  <div class="card good"><span>Benign Samples</span><b>{{metrics.benign_cases}}</b></div>
+  <div class="card good"><span>Valid Samples</span><b>{{metrics.valid}}</b></div>
+  <div class="card bad"><span>Invalid Samples</span><b>{{metrics.invalid}}</b></div>
+  <div class="card focus"><span>Overall Avg Defense Score</span><b>{{metrics.defense_score}}<small>/100</small></b></div>
+  <div class="card"><span>Overall Avg Safe Rate</span><b>{{metrics.safe_rate}}%</b></div>
+  <div class="card {% if metrics.raw_critical_rate == 0 %}good{% elif metrics.raw_critical_rate <= 5 %}warn{% else %}bad{% endif %}"><span>Raw Critical Leak</span><b>{{metrics.raw_critical_rate}}%</b></div>
+  <div class="card {% if metrics.delivered_critical_rate == 0 %}good{% elif metrics.delivered_critical_rate <= 5 %}warn{% else %}bad{% endif %}"><span>Delivered Critical Leak</span><b>{{metrics.delivered_critical_rate}}%</b></div>
+  <div class="card"><span>False Positive</span><b>{% if metrics.false_positive_rate is none %}N/A{% else %}{{metrics.false_positive_rate}}%{% endif %}</b></div>
+  <div class="card good"><span>Benign Pass</span><b>{% if metrics.benign_pass_rate is none %}N/A{% else %}{{metrics.benign_pass_rate}}%{% endif %}</b></div>
+  <div class="card"><span>Scoring Cov.</span><b>{{metrics.coverage}}%</b></div>
+</div>
+<p class="muted metric-note">Overall averages are aggregated across selected defense groups. Defense Score uses attack samples; False Positive and Benign Pass use benign / normal samples.</p>
+
+<section class="panel heatmap-panel">
+  <div class="row heatmap-title-row">
+    <div>
+      <h3>Attack Risk Heatmap by Defense Group</h3>
+      <p class="muted">Delivered Critical Leak reflects user-visible critical leakage after output filtering/redaction. This heatmap is calculated from attack samples only; benign samples are excluded.</p>
+    </div>
+    <label class="metric-select">Metric
+      <select disabled>
+        <option>Delivered Critical Leak</option>
+      </select>
+    </label>
+  </div>
+  <div class="risk-grid" style="--group-count: {{ attack_group_heatmap.groups|length }}">
+    <div class="risk-head attack-col">Attack Category</div>
+    {% for g in attack_group_heatmap.groups %}
+      <div class="risk-head group-col"><b>{{g.split(' ')[0]}}</b><span>{{g.replace(g.split(' ')[0] ~ ' ', '')}}</span></div>
+    {% endfor %}
+    {% for row in attack_group_heatmap.rows %}
+      <div class="risk-attack"><b>{{row.attack_id}}</b><span>{{row.attack_name}}</span></div>
+      {% for c in row.cells %}
+        <div class="risk-cell {{c.class}}" title="{{row.attack_id}} {{row.attack_name}} | {{c.group}} | Delivered Critical: {{c.delivered_critical_rate}}% | Raw Critical: {{c.raw_critical_rate}}% | Defense Score: {{c.defense_score}} | Worst L{{c.worst_leak_level}} | Valid / Total: {{c.valid_total}}">
+          <span>{{c.value_display}}</span>
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  <div class="heat-legend"><span><i class="risk-low"></i>0% delivered critical</span><span><i class="risk-warn"></i>&gt;0–5% low risk</span><span><i class="risk-med"></i>&gt;5–15% medium risk</span><span><i class="risk-high"></i>&gt;15% high risk</span></div>
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <h3>Latest Findings</h3>
+    <div class="alert-list">
+      {% for a in latest_findings %}
+      <div class="alert {{'critical' if a.critical_rate>=35 else 'warning'}}"><b>{{'Critical Leak Detected' if a.critical_rate>=35 else 'Watchlisted Vector'}}</b><span>Attack: {{a.display_id or a.attack_id}} | Delivered Critical: {{a.critical_rate}}% | Raw Critical: {{a.raw_critical_rate}}%</span></div>
+      {% else %}
+      <div class="alert"><b>No critical findings</b><span>No delivered/raw critical leak detected in the current dataset.</span></div>
+      {% endfor %}
+    </div>
+    <a class="btn full" href="/traces">Open Trace Viewer</a>
+  </section>
+  <section class="panel">
+    <div class="row"><h3>Model Vector Performance</h3><span class="muted">Latest report dataset</span></div>
+    <table><tr><th>Ollama Model</th><th>Defense Score</th><th>Safe Rate</th><th>Delivered Critical</th><th>Status</th></tr>
+    {% for m in models %}<tr><td class="mono">{{m.model}}</td><td>{{m.defense_score}}</td><td>{{m.safe_rate}}%</td><td>{{m.delivered_critical_rate}}%</td><td><span class="pill">{{m.status}}</span></td></tr>{% endfor %}</table>
+  </section>
+</div>
+{% endblock %}

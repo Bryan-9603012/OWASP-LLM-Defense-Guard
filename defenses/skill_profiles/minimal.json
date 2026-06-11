@@ -1,0 +1,8 @@
+{
+  "id": "minimal",
+  "name": "最小安全規則",
+  "description": "只載入基礎安全規則，適合測試小模型是否能承受最短 skill。",
+  "skill_files": [
+    "defenses/skills/base_security_skill.md"
+  ]
+}

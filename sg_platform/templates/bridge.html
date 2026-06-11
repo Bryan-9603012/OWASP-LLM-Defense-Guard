@@ -1,0 +1,47 @@
+{% extends "layout.html" %}{% block content %}
+<div class="title"><h2>Official Runner Bridge</h2><p>讓 Web 只取代終端機 UI：Web 會把表單內容轉成原本 <span class="mono">src/run_benchmark.py</span> 支援的 CLI 參數。Web 不改 scoring、不改 skill、不改 invalid 邏輯。</p></div>
+
+<section class="panel hero {{'good' if bridge_cfg.enabled else ''}}">
+  <span>Current Status</span>
+  <h3>{{'ENABLED' if bridge_cfg.enabled else 'NOT CONFIGURED'}}</h3>
+  <p>{% if bridge_cfg.enabled %}Web Start 會呼叫下方 official runner command。{% else %}目前只會停在 CONFIG_READY。設定並啟用後，Web 就能呼叫原本正式腳本。{% endif %}</p>
+  <p><b>Command:</b> <span class="mono">{{bridge_cfg.command_text or '(not set)'}}</span></p>
+  <p><b>CWD:</b> <span class="mono">{{bridge_cfg.cwd}}</span></p>
+  {% if bridge_cfg.error %}<div class="notice warning"><b>Bridge Config Error</b><span>{{bridge_cfg.error}}</span></div>{% endif %}
+</section>
+
+<section class="panel">
+  <h3>Configure Bridge</h3>
+  <p class="muted">請選你的「原本正式 runner」。此整合版預設使用 <span class="mono">src/run_benchmark.py</span>，並直接呼叫它既有的 --model / --defense / --attack-ids / --styles 等參數。</p>
+  <form method="post" action="/bridge/save" class="formgrid wizard-grid">
+    <label class="inline-check wide"><input type="checkbox" name="enabled" {% if bridge_cfg.enabled %}checked{% endif %}> <b>Enable official runner bridge</b><small>啟用後，Experiment Center 的 Start 會呼叫這個 command。</small></label>
+    <label><span>Runner Script</span>
+      <select name="runner_script">
+        {% for s in scripts %}<option value="{{s.path}}">{{s.path}} — {{s.hints}}</option>{% endfor %}
+        {% if not scripts %}<option value="src/run_benchmark.py">src/run_benchmark.py</option>{% endif %}
+      </select>
+      <small>若列表沒有你的 runner，可以在 Advanced Command 直接輸入。</small>
+    </label>
+    <label><span>Config Flag</span><input name="config_flag" value=""><small>本整合版通常留空；Web 會轉成 run_benchmark.py 原本支援的 CLI 參數。</small></label>
+    <label><span>Extra Args</span><input name="extra_args" placeholder="例如 --formal 或 --non-interactive"><small>可留空。</small></label>
+    <label><span>Working Directory</span><input name="cwd" value="{{bridge_cfg.cwd or '{root}'}}"><small>通常用 {root}。</small></label>
+    <label class="wide"><span>Advanced Raw Command</span><input name="raw_command" placeholder='例如: {python} src/run_benchmark.py'><small>填這欄會覆蓋上面的 Runner Script。通常不用填。可用 placeholders：{python}, {root}, {config}, {run_dir}, {reports}, {job_id}。</small></label>
+    <div class="wide"><button class="primary" type="submit">Save Bridge Settings</button></div>
+  </form>
+</section>
+
+<section class="panel">
+  <h3>Detected Python Scripts</h3>
+  <table><tr><th>Script</th><th>Hints</th><th>Recommendation Score</th></tr>{% for s in scripts %}<tr><td class="mono">{{s.path}}</td><td>{{s.hints}}</td><td>{{s.score}}</td></tr>{% else %}<tr><td colspan="3">No root-level Python runner script detected in this package.</td></tr>{% endfor %}</table>
+</section>
+
+<section class="panel">
+  <h3>Official Runner Requirements</h3>
+  <div class="mode-help">
+    <div><b>Web UI only</b><span>只產生 config 與呼叫 runner，不重新判分。</span></div>
+    <div><b>Official logic</b><span>attacks、skill、custom assets、valid_sample 都由原本 runner 處理。</span></div>
+    <div><b>Native CLI args</b><span>使用 run_benchmark.py 原本已支援的 CLI 參數，不要求 --config。</span></div>
+    <div><b>Reports</b><span>runner 仍輸出原本 reports，Web 再讀取顯示。</span></div>
+  </div>
+</section>
+{% endblock %}

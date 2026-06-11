@@ -1,0 +1,59 @@
+{% extends "layout.html" %}{% block content %}
+<div class="title"><h2>Skill Manager</h2><p>管理原本正式 runner 已支援的 Skill Profile 與 Custom Skill 檔案。Web 只編輯/選擇檔案，不改 skill engine、scoring 或 invalid 判斷。</p></div>
+
+<section class="panel">
+  <h3>Built-in Skill Profiles</h3>
+  <p class="muted">來源：<code>{{skill_profiles.path}}</code>；預設 profile：<b>{{skill_profiles.default or 'not set'}}</b></p>
+  <table>
+    <tr><th>Profile ID</th><th>Name</th><th>Description</th><th>Skill Files</th></tr>
+    {% for p in skill_profiles.profiles %}
+    <tr>
+      <td class="mono">{{p.id}}</td>
+      <td><b>{{p.name}}</b></td>
+      <td>{{p.description}}</td>
+      <td>{% for f in p.skill_files %}<div class="mono">{{f}}</div>{% endfor %}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No built-in skill profiles found.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="panel">
+  <h3>Custom Skill Files</h3>
+  <p class="muted">來源：<code>defenses/custom/</code>。原本 runner 已支援 <code>--custom-skill-file</code>，自訂 skill 會以 custom-only 方式掛載。</p>
+  <table>
+    <tr><th>File</th><th>Chars</th><th>First Line</th><th>Action</th></tr>
+    {% for f in custom_skill_files %}
+    <tr>
+      <td class="mono">{{f.path}}</td>
+      <td>{{f.chars}}</td>
+      <td>{{f.first_line}}</td>
+      <td><a class="btn" href="/skills?file={{f.name}}">Edit</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No custom skill markdown files yet.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section class="panel">
+  <h3>Edit Custom Skill</h3>
+  <form method="post" action="/skills/save" class="formgrid wizard-grid">
+    <label class="wide"><span>File Name</span><input name="file_name" value="{{selected_custom_skill}}"><small>會儲存在 <code>defenses/custom/</code>；請使用 .md 檔名。</small></label>
+    <label class="wide"><span>Skill Markdown Content</span><textarea name="content" rows="18" spellcheck="false" placeholder="# Custom Skill&#10;在這裡撰寫你的自訂 skill...">{{custom_skill_content}}</textarea><small>這份內容會由正式 runner 透過 <code>--custom-skill-file</code> 讀取；Web 不會自行套用或判分。</small></label>
+    <button class="primary" type="submit">Save Custom Skill</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h3>Formal G-Group Mapping</h3>
+  <div class="grid4">
+    {% for g in formal_g_groups %}
+    <div class="panel mini"><span>{{g}}</span><b>{{'Baseline' if g=='No Defense' else 'Formal G-Group'}}</b><p>{{'No skill / no custom asset.' if g=='No Defense' else 'Available in Experiment Center.'}}</p></div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="notice oknotice"><b>Official runner only</b><span>Experiment Center 會把 Skill Profile 轉成 <code>--skill-profile</code>，Custom Skill 轉成 <code>--custom-skill-file</code>；attacks、skill 掛載、scoring、valid_sample/invalid 全部仍由 <code>src/run_benchmark.py</code> 處理。</span></div>
+{% endblock %}

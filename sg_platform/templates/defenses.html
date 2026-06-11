@@ -1,0 +1,54 @@
+{% extends "layout.html" %}{% block content %}
+<div class="title">
+  <h2>Defense Group Comparison</h2>
+  <p>目前頁面會優先讀取正式終端機 runner 的 compare_* 結果；若沒有正式結果，才讀取 Web request 或根目錄報表。</p>
+</div>
+
+<section class="panel">
+  <h3>Loaded Report Context</h3>
+  <div class="metrics metrics4">
+    <div class="card"><span>Report Path</span><b class="mono smalltext">{{data_source.path or 'demo'}}</b></div>
+    <div class="card"><span>Protected Asset</span><b class="mono smalltext">{{data_source.meta.asset_label}}</b></div>
+    <div class="card"><span>Group Mode</span><b>{{data_source.meta.group_mode}}</b></div>
+    <div class="card"><span>Model / Language</span><b class="mono smalltext">{{data_source.meta.models}} / {{data_source.meta.languages}}</b></div>
+  </div>
+</section>
+
+<section class="panel">
+  <h3>{% if data_source.meta.group_mode == 'Formal G-Group' %}Formal G-Group Comparison{% else %}Defense Strategy Audit{% endif %}</h3>
+  <table>
+    <tr>
+      <th>Defense Group</th>
+      <th>Profile</th>
+      <th>Valid / Total</th>
+      <th>Defense Score</th>
+      <th>Safe Rate</th>
+      <th>Raw Critical</th>
+      <th>Delivered Critical</th>
+      <th>Output Intervention</th>
+      <th>Model Refusal</th>
+      <th>False Positive</th>
+      <th>Benign Pass</th>
+      <th>Coverage</th>
+      <th>Score Gain vs Baseline</th>
+    </tr>
+  {% for d in defenses %}<tr>
+    <td><b>{{d.group}}</b> {% if d.is_best %}<span class="pill okpill">BEST</span>{% endif %}{% if d.group in ['No Defense','G0 No Defense'] %}<span class="pill">BASELINE</span>{% endif %}</td>
+    <td><span class="pill">{{'Formal G-Group' if d.group.startswith('G') else 'Strategy Audit' if d.group in ['No Defense','Skill Only','Custom Asset Only','Skill + Custom Asset'] else 'Optional Extended'}}</span></td>
+    <td>{{d.valid_total_display}}</td>
+    <td>{{d.defense_score}}</td>
+    <td class="ok">{{d.safe_rate}}%</td>
+    <td class="badtxt">{{d.raw_critical_rate}}%</td>
+    <td class="badtxt">{{d.delivered_critical_rate}}%</td>
+    <td>{{d.output_intervention_rate}}%</td>
+    <td>{{d.model_refusal_rate}}%</td>
+    <td>{{d.false_positive_display}}</td>
+    <td class="ok">{{d.benign_pass_display}}</td>
+    <td>{{d.coverage}}%</td>
+    <td class="{{'ok' if d.improvement > 0 else 'badtxt' if d.improvement < 0 else ''}}">{{d.gain_display}}</td>
+  </tr>{% endfor %}</table>
+  <p class="muted">Output Intervention 只統計 output block / redaction 等平台輸出層介入；Model Refusal 統計模型自行拒答。Coverage = valid / total，invalid 樣本不納入 Defense Score。</p>
+  <p class="muted">Defense Score 由 attack samples 計算；False Positive / Benign Pass 由 benign / normal samples 計算。若顯示 N/A，代表本次沒有勾選 Normal / Benign samples。</p>
+</section>
+<div class="grid3">{% for d in defenses[:3] %}<div class="panel mini"><span>{{d.group}}</span><b>{{d.defense_score}}</b><p>Defense Score</p></div>{% endfor %}</div>
+{% endblock %}

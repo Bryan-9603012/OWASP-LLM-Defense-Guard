@@ -1,0 +1,192 @@
+{% extends "layout.html" %}{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Run Official Experiment <span class="mode-badge">🚀 FORMAL BENCHMARK MODE</span></h2>
+    <p>Web UI 取代終端機選單：收集參數 → 呼叫 <code>src/run_benchmark.py</code> → 讀取正式 reports。Web UI 不另外實作 scoring 或防禦邏輯。</p>
+  </div>
+  <div class="actions">
+    <a class="btn ghost" href="/assets">Manage Assets</a>
+    <a class="btn ghost" href="/reports">Reports</a>
+  </div>
+</div>
+
+<div class="stepper stitch-stepper" aria-label="official runner steps">
+  <span class="active"><b>1</b> Runtime</span>
+  <span><b>2</b> Attack Scope</span>
+  <span><b>3</b> Defense Groups</span>
+  <span><b>4</b> Assets</span>
+  <span><b>5</b> Review</span>
+</div>
+
+<section class="panel source-panel">
+  <h3>Loaded Official Result</h3>
+  <div class="meta-grid">
+    <div><span>Report Path</span><b class="mono">{{data_source.meta.path or data_source.path or 'No report loaded'}}</b></div>
+    <div><span>Protected Asset</span><b>{{data_source.meta.asset_label}}</b></div>
+    <div><span>Group Mode</span><b>{{data_source.meta.group_mode}}</b></div>
+    <div><span>Model / Language</span><b>{{data_source.meta.models or 'N/A'}} / {{data_source.meta.languages or 'N/A'}}</b></div>
+  </div>
+</section>
+
+<form method="post" action="/experiments/start" class="runner-form">
+<section class="panel stitch-card">
+  <h3>▣ Model / Runtime Configuration</h3>
+  <div class="form-grid stitch-form-grid">
+    <label><span>Model Mode</span>
+      <select name="model_mode">
+        <option value="single" selected>Single model</option>
+        <option value="batch">Batch models</option>
+      </select>
+      <small>單模型適合快速測試；批次模式可一次跑多個 Ollama 模型。</small>
+    </label>
+    <label><span>Installed Model</span>
+      <select name="model_select">
+        {% for m in models %}<option value="{{m}}" {% if loop.first %}selected{% endif %}>{{m}}</option>{% endfor %}
+      </select>
+      <small>從已安裝模型清單選擇；也可在右側手動輸入覆蓋。</small>
+    </label>
+    <label><span>Manual Model</span>
+      <input name="custom_model" placeholder="gemma3:12b">
+      <small>可輸入未安裝模型；若啟用 auto-pull，會先下載再測試。</small>
+    </label>
+    <label class="wide"><span>Batch Models</span>
+      <textarea name="batch_models" rows="5" placeholder="gemma3:1b&#10;gemma3:12b&#10;llama3.1:8b&#10;qwen2.5:7b"></textarea>
+      <small>批次模式使用：一行一個模型，也支援逗號分隔。系統會逐一模型 sequential benchmark，不會平行跑。</small>
+    </label>
+    <label><span>Model Pull Policy</span>
+      <label class="inline-check"><input type="checkbox" name="auto_pull_missing_models" checked> Auto-pull missing models</label>
+      <label class="inline-check"><input type="checkbox" name="skip_missing_models"> Skip pull failures / missing models</label>
+      <small>模型不存在時會透過 Ollama <code>/api/pull</code> 下載；大型模型可能需要較久時間與磁碟空間。</small>
+    </label>
+    <label class="wide"><span>Ollama URL / API Endpoint</span>
+      <input name="ollama_url" value="http://127.0.0.1:11434">
+    </label>
+    <label><span>Runs per Sample</span>
+      <input name="rounds" type="number" min="1" value="1">
+    </label>
+    <label><span>Max Tokens</span>
+      <input name="max_tokens" type="number" min="1" value="800">
+    </label>
+    <label><span>Context Window</span>
+      <input name="num_ctx" type="number" min="256" value="4096">
+    </label>
+    <label><span>Temperature</span>
+      <input name="temperature" type="number" step="0.1" value="0.0">
+    </label>
+    <label><span>Seed</span>
+      <input name="seed" type="number" value="42">
+    </label>
+  </div>
+</section>
+
+<section class="panel stitch-card two-col-panel">
+  <div class="section-main">
+    <h3>🛡 Attack Scope Definition</h3>
+    <div class="form-grid stitch-form-grid compact">
+      <label><span>Attack Set</span>
+        <select name="attack_set">
+          <option value="controlled" selected>controlled</option>
+          <option value="enterprise">enterprise</option>
+          <option value="both">both</option>
+        </select>
+      </label>
+      <label><span>Attack IDs</span>
+        <input name="attack_ids" value="all">
+        <small>可填 <code>all</code> 或 <code>A01,A03,A19</code>；只有 attack_ids=all 時，Limit Base Attacks 才會生效。</small>
+      </label>
+      <label><span>Limit Base Attacks</span>
+        <input name="limit_base_attacks" type="number" min="1" value="20">
+      </label>
+    </div>
+  </div>
+  <div class="sample-box">
+    <h4>Target Languages & Samples</h4>
+    <label><input type="checkbox" name="languages" value="en" checked> en_pure <small>English Only</small></label>
+    <label><input type="checkbox" name="languages" value="zh"> zh_pure <small>Chinese Only</small></label>
+    <label><input type="checkbox" name="languages" value="zh-en"> zh_main_en_mixed</label>
+    <label><input type="checkbox" name="languages" value="en-zh"> en_main_zh_mixed</label>
+    <hr>
+    <label class="strong"><input type="checkbox" name="include_benign"> Include benign / normal samples <small>optional false-positive check</small></label>
+    <input type="hidden" name="benign_file" value="data/benign_prompts.json">
+  </div>
+</section>
+
+<section class="panel stitch-card">
+  <h3>⬡ Defense Group Configuration</h3>
+  <p class="muted">v25 Input/Output Guard formal groups。G2/G3/G4/G5/G6 分別對應 input boundary、input guard、output guard、IO guard、full guard。</p>
+  <div class="g-card-grid">
+    {% for g in formal_g_groups %}
+      <label class="g-card">
+        <input type="checkbox" name="defense_groups" value="{{g}}" {% if g in ['G0 No Defense','G1 Skill-only','G2 Input Boundary','G3 Input Guard','G4 Output Guard','G5 IO Guard','G6 Full Guard'] %}checked{% endif %}>
+        <span class="g-name">{{g}}</span>
+        {% if g.startswith('G0') %}<small>baseline · no guard</small>{% elif g.startswith('G1') %}<small>skill prompt only</small>{% elif g.startswith('G2') %}<small>untrusted input wrapper</small>{% elif g.startswith('G3') %}<small>pre-model input review</small>{% elif g.startswith('G4') %}<small>post-model output review</small>{% elif g.startswith('G5') %}<small>input + boundary + output</small>{% elif g.startswith('G6') %}<small>skill + IO guard</small>{% else %}<small>optional extended group</small>{% endif %}
+      </label>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel stitch-card">
+  <h3>🔐 Skill / Protected Asset</h3>
+  <div class="form-grid stitch-form-grid">
+    <label><span>Skill Profile</span>
+      <select name="skill_profile">
+        {% set profiles = skill_profiles.profiles or [] %}
+        {% for p in profiles %}
+          {% set pid = p.id if p.id is defined else p.get('id','') %}
+          <option value="{{pid}}" {% if pid == 'enterprise_strict' or (not loop.index0 and pid) %}selected{% endif %}>{{pid}}</option>
+        {% else %}
+          <option value="enterprise_strict" selected>enterprise_strict</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label><span>Custom Skill File</span>
+      <select name="custom_skill_file">
+        <option value="">none</option>
+        {% for f in custom_skill_files %}<option value="{{f.path}}">{{f.path}}</option>{% endfor %}
+      </select>
+    </label>
+
+    <label><span>Output Guard Action Mode</span>
+      <select name="output_guard_action_mode">
+        <option value="auto" selected>auto · choose by risk</option>
+        <option value="shadow">shadow · detect only</option>
+        <option value="redact">redact · mask matched content</option>
+        <option value="block">block · replace unsafe response</option>
+      </select>
+      <small>適用 G4/G5/G6。正式建議用 auto；研究 raw risk 可用 shadow。</small>
+    </label>
+    <label><span>Protected Asset</span>
+      <select name="protected_asset_id">
+        <option value="legacy">使用舊版 data/protected_data.txt</option>
+        {% for a in assets %}
+          {% if a.enabled is not sameas false and a.asset_type in ['exact_secret','document_secret'] %}
+            <option value="{{a.asset_id}}">{{a.name}} [{{a.asset_id}}] / risk={{a.risk_level}}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="checks trace-check">
+    <label><input type="checkbox" name="prompt_trace" checked> save prompt trace</label>
+  </div>
+</section>
+
+<section class="panel stitch-card review-start">
+  <h3>5. Review & Start</h3>
+  <p class="muted">按下後 Web UI 會把參數送給正式 runner。實驗完成後，結果會顯示在 Overview、Defense Groups、Model Results、Trace Viewer 與 Reports。</p>
+  <button class="btn primary big" type="submit">Start Official Runner</button>
+</section>
+</form>
+
+<section class="panel stitch-card">
+  <h3>Recent UI-launched Official Jobs</h3>
+  <table>
+    <tr><th>Job</th><th>Status</th><th>Progress</th><th>Current</th><th>Open</th></tr>
+    {% for j in jobs %}
+      <tr><td class="mono">{{j.job_id[:8]}}</td><td><span class="pill">{{j.status}}</span></td><td>{{j.done}} / {{j.total}}</td><td>{{j.current}}</td><td><a href="/experiments/{{j.job_id}}">open</a></td></tr>
+    {% else %}
+      <tr><td colspan="5">No UI-launched official jobs yet.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

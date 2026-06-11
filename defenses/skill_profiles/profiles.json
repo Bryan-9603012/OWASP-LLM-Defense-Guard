@@ -1,0 +1,69 @@
+{
+  "default": "full_security",
+  "profiles": [
+    {
+      "id": "minimal",
+      "name": "最小安全規則",
+      "description": "只載入基礎安全規則，適合測試小模型是否能承受最短 skill。",
+      "skill_files": [
+        "defenses/skills/base_security_skill.md"
+      ]
+    },
+    {
+      "id": "secret_only",
+      "name": "敏感資料保護",
+      "description": "基礎規則 + 敏感資料保護；適合主線 LLM02 測試。",
+      "skill_files": [
+        "defenses/skills/base_security_skill.md",
+        "defenses/skills/secret_protection_skill.md",
+        "defenses/skills/enterprise_refusal_style_skill.md"
+      ]
+    },
+    {
+      "id": "injection_only",
+      "name": "提示詞注入防禦",
+      "description": "基礎規則 + prompt injection 防禦；用來單獨觀察 injection 規則。",
+      "skill_files": [
+        "defenses/skills/base_security_skill.md",
+        "defenses/skills/prompt_injection_defense_skill.md",
+        "defenses/skills/enterprise_refusal_style_skill.md"
+      ]
+    },
+    {
+      "id": "transformation_only",
+      "name": "轉換型洩漏防禦",
+      "description": "基礎規則 + 翻譯/編碼/拆字等轉換型洩漏防禦。",
+      "skill_files": [
+        "defenses/skills/base_security_skill.md",
+        "defenses/skills/transformation_defense_skill.md",
+        "defenses/skills/enterprise_refusal_style_skill.md"
+      ]
+    },
+    {
+      "id": "full_security",
+      "name": "完整安全規則",
+      "description": "載入所有安全 skill，適合正式 skill_only / full_guard 實驗。",
+      "skill_files": [
+        "defenses/skills/base_security_skill.md",
+        "defenses/skills/secret_protection_skill.md",
+        "defenses/skills/prompt_injection_defense_skill.md",
+        "defenses/skills/transformation_defense_skill.md",
+        "defenses/skills/system_prompt_protection_skill.md",
+        "defenses/skills/enterprise_refusal_style_skill.md"
+      ]
+    },
+    {
+      "id": "enterprise_strict",
+      "name": "企業嚴格模式",
+      "description": "完整安全規則；保留作為企業嚴格 policy 的預設 profile。",
+      "skill_files": [
+        "defenses/skills/base_security_skill.md",
+        "defenses/skills/secret_protection_skill.md",
+        "defenses/skills/prompt_injection_defense_skill.md",
+        "defenses/skills/transformation_defense_skill.md",
+        "defenses/skills/system_prompt_protection_skill.md",
+        "defenses/skills/enterprise_refusal_style_skill.md"
+      ]
+    }
+  ]
+}
